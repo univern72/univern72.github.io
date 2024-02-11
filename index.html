@@ -1,1 +1,99 @@
-test
+<html>
+  <head>
+    <style>
+	  .container {
+	    display: flex;
+		flex-direction: column;
+	  }
+	  #roll-log {
+	    min-height: 400px;
+	  }
+	</style>
+	<script>  
+	  function randomInt(max) {
+	    return Math.floor(Math.random() * max) + 1;
+	  }
+	  
+	  function roll(label, max) {
+	    var value = randomInt(max);
+		appendLog(label + ": " + value);
+	    return value;
+	  }
+	  
+	  function baseDamageRoll(label, max) {
+	    var value = randomInt(max);
+		if (value == 1 || value == 2) {
+		  value = randomInt(max);
+		}
+		appendLog(label + ": " + value);
+		return value;
+	  }
+	  
+	  function constant(label, value) {
+	    appendLog(label + ": " + value);
+		return value;
+	  }
+	  
+	  function sum(value) {
+	  	appendLog("-----------");
+		constant("total", value);
+		appendLog("");
+	  }
+	  
+	  function appendLog(logValue) {
+		  document.getElementById("roll-log").value =
+				document.getElementById("roll-log").value + "\n" + logValue;
+	  }
+	  
+	  function attack() {
+	    var attack1 = roll("attack", 20);
+		
+		var isAdvantageChecked = document.querySelector('#advantage').checked;
+		var isDisadvantageChecked = document.querySelector('#advantage').checked;
+				
+		if (isAdvantageChecked == true
+			|| isDisadvantageChecked == true) {
+		  attack2 = roll("attack", 20);
+		}
+		var attackValue = isAdvantageChecked
+		    ? Math.max(attack1, attack2)
+			: isDisadvantageChecked
+				? Math.min(attack1, attack2)
+				: attack1;
+				
+	    var total = attackValue
+		    + constant("modifier", 12);
+		sum(total);
+	  }
+	  
+	  function axeDamage() {
+	    var total = baseDamageRoll("axe", 12)
+		    + roll("lightning", 6)
+			+ roll("lightning", 6)
+			+ constant("value", 7);
+        sum(total);
+	  }
+
+      function maulDamage() {
+	    var total = baseDamageRoll("maul", 6)
+		    + baseDamageRoll("maul", 6)
+		    + roll("lightning", 6)
+			+ roll("lightning", 6)
+			+ constant("value", 7);
+        sum(total);
+	  }
+	</script>
+  </head>
+  <body>
+	  <div class="container">
+		  <div>advantage <input type="checkbox" id="advantage">disadvantage <input type="checkbox" id="disadvantage"></div>
+		  <div>crit <input type="checkbox" id="crit"></div>
+		  <div>
+			<input type="button" value="attack" onclick="attack()">
+			<input type="button" value="axe damage" onclick="axeDamage()">
+			<input type="button" value="maul damage" onclick="maulDamage()">
+		  </div>
+		  <textarea id="roll-log"></textarea>
+	  </div>
+  </body>
+</html>
