@@ -1,5 +1,6 @@
 <html>
   <head>
+    <title>u72 dice roller</title>
     <style>
 	  .container {
 	    display: flex;
@@ -14,23 +15,23 @@
 	    return Math.floor(Math.random() * max) + 1;
 	  }
 	  
+	  function logStart(label) {
+	    return (label + ": ").padEnd(14, ' ');
+	  }
+	  	  
+	  function appendLog(logValue) {
+		  document.getElementById("roll-log").value =
+				document.getElementById("roll-log").value + "\n" + logValue;
+	  }
+	  
 	  function roll(label, max) {
 	    var value = randomInt(max);
-		appendLog(label + ": " + value);
+		appendLog(logStart(label) + value);
 	    return value;
 	  }
 	  
-	  function baseDamageRoll(label, max) {
-	    var value = randomInt(max);
-		if (value == 1 || value == 2) {
-		  value = randomInt(max);
-		}
-		appendLog(label + ": " + value);
-		return value;
-	  }
-	  
 	  function constant(label, value) {
-	    appendLog(label + ": " + value);
+	    appendLog(logStart(label) + value);
 		return value;
 	  }
 	  
@@ -40,9 +41,10 @@
 		appendLog("");
 	  }
 	  
-	  function appendLog(logValue) {
-		  document.getElementById("roll-log").value =
-				document.getElementById("roll-log").value + "\n" + logValue;
+	  function sum2(value) {
+		logStr = "-----------\n";
+	  	logStr += logStart("total") + value + "\n\n";
+		return logStr;
 	  }
 	  
 	  function attack() {
@@ -65,21 +67,66 @@
 		    + constant("modifier", 12);
 		sum(total);
 	  }
+
+	  function attack2() {
+		var isAdvantageChecked = document.querySelector('#advantage').checked;
+		var isDisadvantageChecked = document.querySelector('#disadvantage').checked;
+
+	    var attackValue;
+		var logStr = logStart("attack");
+		
+		if (isAdvantageChecked) {
+		  var attack1 = randomInt(20);
+		  var attack2 = randomInt(20);
+		  attackValue = Math.max(attack1, attack2);
+		  logStr += "max(" + attack1 + ", " + attack2 + ") -> " + attackValue + "\n";
+		} else if(isDisadvantageChecked) {
+		  var attack1 = randomInt(20);
+		  var attack2 = randomInt(20);
+		  attackValue = Math.min(attack1, attack2);
+		  logStr += "min(" + attack1 + ", " + attack2 + ") -> " + attackValue + "\n";
+		} else {
+		  attackValue = randomInt(20);
+		  logStr += attackValue + "\n";
+		}
+		logStr += logStart("modifier") + 12 + "\n"; 
+		var attackSum = attackValue + 12;
+		logStr += sum2(attackSum);
+		
+        appendLog(logStr);
+	  }
+	  
+	  function damageRoll(label, rolls, max, isBaseDamage) {
+	    var log = logStart(label);
+		var sum = 0;
+		var isCrit = document.querySelector('#crit').checked
+		for (var i = 0; i < rolls * (isCrit ? 2 : 1); i++) {
+	      var value = randomInt(max);
+		  log = log + value;
+		  if (isBaseDamage && (value == 1 || value == 2)) {
+		    value = randomInt(max);
+			log = log + "->" + value;
+		  }
+		  sum += value;
+		  log += " ";
+		}
+		log = log + "-> " + sum;
+	    
+		appendLog(log);
+		return sum;
+	  }
 	  
 	  function axeDamage() {
-	    var total = baseDamageRoll("axe", 12)
-		    + roll("lightning", 6)
-			+ roll("lightning", 6)
-			+ constant("value", 7);
+	    var total = damageRoll("axe", 1, 12, true)
+		    + damageRoll("thunder", 2, 6, false)
+			+ constant("modifier", 7);
         sum(total);
 	  }
 
       function maulDamage() {
-	    var total = baseDamageRoll("maul", 6)
-		    + baseDamageRoll("maul", 6)
-		    + roll("lightning", 6)
-			+ roll("lightning", 6)
-			+ constant("value", 7);
+	    var total = damageRoll("maul", 2, 6, true)
+		    + damageRoll("fire", 2, 6, false)
+			+ constant("modifier", 7);
         sum(total);
 	  }
 	</script>
@@ -89,7 +136,7 @@
 		  <div>advantage <input type="checkbox" id="advantage">disadvantage <input type="checkbox" id="disadvantage"></div>
 		  <div>crit <input type="checkbox" id="crit"></div>
 		  <div>
-			<input type="button" value="attack" onclick="attack()">
+			<input type="button" value="attack" onclick="attack2()">
 			<input type="button" value="axe damage" onclick="axeDamage()">
 			<input type="button" value="maul damage" onclick="maulDamage()">
 		  </div>
