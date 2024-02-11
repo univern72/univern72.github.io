@@ -8,8 +8,8 @@
 		flex-direction: column;
 	  }
 	  #roll-log {
-	    min-height: 400px;
-		max-width: 400px;
+	    min-height: 500px;
+		max-width: 300px;
 	  }
 	</style>
 	<script>  
@@ -26,12 +26,6 @@
 				document.getElementById("roll-log").value + "\n" + logValue;
 	  }
 	  
-	  function roll(label, max) {
-	    var value = randomInt(max);
-		appendLog(logStart(label) + value);
-	    return value;
-	  }
-	  
 	  function constant(label, value) {
 	    appendLog(logStart(label) + value);
 		return value;
@@ -43,34 +37,14 @@
 		appendLog("");
 	  }
 	  
+	  
 	  function sum2(value) {
 		logStr = "-----------\n";
 	  	logStr += logStart("total") + value + "\n\n";
 		return logStr;
 	  }
-	  
-	  function attack() {
-	    var attack1 = roll("attack", 20);
-		
-		var isAdvantageChecked = document.querySelector('#advantage').checked;
-		var isDisadvantageChecked = document.querySelector('#advantage').checked;
-				
-		if (isAdvantageChecked == true
-			|| isDisadvantageChecked == true) {
-		  attack2 = roll("attack", 20);
-		}
-		var attackValue = isAdvantageChecked
-		    ? Math.max(attack1, attack2)
-			: isDisadvantageChecked
-				? Math.min(attack1, attack2)
-				: attack1;
-				
-	    var total = attackValue
-		    + constant("modifier", 12);
-		sum(total);
-	  }
 
-	  function attack2() {
+	  function attack() {
 		var isAdvantageChecked = document.querySelector('#advantage').checked;
 		var isDisadvantageChecked = document.querySelector('#disadvantage').checked;
 
@@ -138,7 +112,7 @@
 		  <div>advantage <input type="checkbox" id="advantage">disadvantage <input type="checkbox" id="disadvantage"></div>
 		  <div>crit <input type="checkbox" id="crit"></div>
 		  <div>
-			<input type="button" value="attack" onclick="attack2()">
+			<input type="button" value="attack" onclick="attack()">
 			<input type="button" value="axe damage" onclick="axeDamage()">
 			<input type="button" value="maul damage" onclick="maulDamage()">
 		  </div>
