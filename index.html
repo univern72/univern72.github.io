@@ -5,116 +5,223 @@
     <style>
 	  .container {
 	    display: flex;
-		flex-direction: column;
+      flex-direction: column;
 	  }
 	  #roll-log {
 	    min-height: 500px;
-		max-width: 300px;
+      max-width: 400px;
 	  }
 	</style>
-	<script>  
+	<script>
+    // globals/constants
+    var logCounter = 1;
+    const SUPERIORITY_MAX = 10;
+    const MELEE_MODIFIER = 12;
+    const JAVELIN_MODIFIER = 10;
+  
+    // math
 	  function randomInt(max) {
 	    return Math.floor(Math.random() * max) + 1;
 	  }
+    
+    // input parsing
+    function isCritChecked() {
+      return document.querySelector('#crit').checked;
+    }
+    
+    function isAdvantageChecked() {
+      return document.querySelector('#advantage').checked;
+    }
+    
+    function isDisadvantageChecked() {
+      return document.querySelector('#disadvantage').checked;
+    }
+    
+    function isSuperiorityChecked() {
+      return document.querySelector('#superiority').checked;
+    }
 	  
+    // log management
+	  function appendLog(logValue) {
+		  document.getElementById("roll-log").value = logCounter + ": "
+          + logValue + "\n"
+          + document.getElementById("roll-log").value;
+      logCounter++;
+	  }
+
 	  function logStart(label) {
 	    return (label + ": ").padEnd(14, ' ');
 	  }
-	  	  
-	  function appendLog(logValue) {
-		  document.getElementById("roll-log").value =
-				document.getElementById("roll-log").value + "\n" + logValue;
-	  }
 	  
-	  function constant(label, value) {
-	    appendLog(logStart(label) + value);
-		return value;
+	  function total(value) {
+      logStr = "----------------------\n";
+	  	logStr += logStart("total") + value + "\n";
+      return logStr;
 	  }
-	  
-	  function sum(value) {
-	  	appendLog("-----------");
-		constant("total", value);
-		appendLog("");
-	  }
-	  
-	  
-	  function sum2(value) {
-		logStr = "-----------\n";
-	  	logStr += logStart("total") + value + "\n\n";
-		return logStr;
-	  }
+    
+    // rolls?
+    function d20Roll() {
+      if (isAdvantageChecked()) {
+        const attack1 = randomInt(20);
+        const attack2 = randomInt(20);
+        return {
+          value: Math.max(attack1, attack2),
+          logStr: "max(" + attack1 + ", " + attack2 + ") -> " + attackValue,
+        }
+      } else if(isDisadvantageChecked()) {
+        const attack1 = randomInt(20);
+        const attack2 = randomInt(20);
+        return {
+          value: Math.min(attack1, attack2),
+          logStr: "min(" + attack1 + ", " + attack2 + ") -> " + attackValue,
+        }
+      } else {
+        const attack = randomInt(20);
+        return {
+          value: attack,
+          log: attack,
+        }
+      }
+    }
 
-	  function attack() {
-		var isAdvantageChecked = document.querySelector('#advantage').checked;
-		var isDisadvantageChecked = document.querySelector('#disadvantage').checked;
 
-	    var attackValue;
-		var logStr = logStart("attack");
+	  function attack(label, modifier) {
+      var attackValue = 0;
+      var logStr = label + "\n" + logStart("roll");
+      
+      const attackRoll = d20Roll();
+      attackValue += attackRoll.value;
+      logStr += attackRoll.log + "\n";
+      
+      logStr += logStart("modifier") + modifier + "\n"; 
+      logStr += total(attackValue + modifier);
 		
-		if (isAdvantageChecked) {
-		  var attack1 = randomInt(20);
-		  var attack2 = randomInt(20);
-		  attackValue = Math.max(attack1, attack2);
-		  logStr += "max(" + attack1 + ", " + attack2 + ") -> " + attackValue + "\n";
-		} else if(isDisadvantageChecked) {
-		  var attack1 = randomInt(20);
-		  var attack2 = randomInt(20);
-		  attackValue = Math.min(attack1, attack2);
-		  logStr += "min(" + attack1 + ", " + attack2 + ") -> " + attackValue + "\n";
-		} else {
-		  attackValue = randomInt(20);
-		  logStr += attackValue + "\n";
-		}
-		logStr += logStart("modifier") + 12 + "\n"; 
-		var attackSum = attackValue + 12;
-		logStr += sum2(attackSum);
-		
-        appendLog(logStr);
+      appendLog(logStr);
 	  }
 	  
-	  function damageRoll(label, rolls, max, isBaseDamage) {
-	    var log = logStart(label);
-		var sum = 0;
-		var isCrit = document.querySelector('#crit').checked
-		for (var i = 0; i < rolls * (isCrit ? 2 : 1); i++) {
-	      var value = randomInt(max);
-		  log = log + value;
-		  if (isBaseDamage && (value == 1 || value == 2)) {
-		    value = randomInt(max);
-			log = log + "->" + value;
-		  }
-		  sum += value;
-		  log += " ";
-		}
-		log = log + "-> " + sum;
-	    
-		appendLog(log);
-		return sum;
+	  function damageRoll({
+        label, 
+        rolls, 
+        max, 
+        modifier = 0, 
+        isBaseDamage = false,
+        isSuperiority = false}) {
+      const critAdjRolls = rolls * (isCritChecked() ? 2 : 1);
+	    var log = logStart(label) + critAdjRolls + "d" + max + " ";
+      var sum = 0;
+      for (var i = 0; i < critAdjRolls; i++) {
+        var value = randomInt(max);
+        log = log + value;
+        if (isBaseDamage && (value == 1 || value == 2)) {
+          value = randomInt(max);
+          log = log + "->" + value;
+        }
+        sum += value;
+        log += " ";
+      }
+      if (isSuperiority) {
+        const supRolls = isCritChecked() ? 2 : 1;
+        log += supRolls + "d" + SUPERIORITY_MAX + " ";
+        for (var i = 0; i < supRolls; i++) {
+          const supDamage = randomInt(SUPERIORITY_MAX);
+          sum += supDamage;
+          log += supDamage + " ";
+        }
+      }
+      if (modifier > 0) {
+        sum += modifier;
+        log += "+" + modifier + " ";
+      }
+
+      log += "=> " + sum;
+        
+      return {
+        log: log,
+        value: sum,
+      };
 	  }
+    
+    function printDamage(title, rolls) {
+      var log = title + "\n";
+      var sumValue = 0;
+      rolls.forEach(roll => {
+        log += roll.log + "\n";
+        sumValue += roll.value;
+      });
+      log += total(sumValue);
+      appendLog(log);
+    }
+
+    // button functions
+    function meleeAttack() {
+      attack("melee attack", MELEE_MODIFIER);
+    }
+    
+    function javelinAttack() {
+      attack("javelin attack", JAVELIN_MODIFIER);
+    }
 	  
 	  function axeDamage() {
-	    var total = damageRoll("axe", 1, 12, true)
-		    + damageRoll("thunder", 2, 6, false)
-			+ constant("modifier", 7);
-        sum(total);
+      printDamage("axe damage", [ 
+        damageRoll({
+            label: "slashing",
+            rolls: 1,
+            max: 12,
+            modifier: 7,
+            isBaseDamage: true,
+            isSuperiority: isSuperiorityChecked()}),
+        damageRoll({
+            label: "thunder",
+            rolls: 2,
+            max: 6})
+      ]);
 	  }
 
-      function maulDamage() {
-	    var total = damageRoll("maul", 2, 6, true)
-		    + damageRoll("fire", 2, 6, false)
-			+ constant("modifier", 7);
-        sum(total);
+    function maulDamage() {   
+      printDamage("maul damage", [ 
+        damageRoll({
+            label: "bludgeoning",
+            rolls: 2,
+            max: 6,
+            modifier: 7,
+            isBaseDamage: true,
+            isSuperiority: isSuperiorityChecked()}),
+        damageRoll({
+            label: "fire",
+            rolls: 2,
+            max: 6})
+      ]);
 	  }
+    
+    function javelinDamage() {
+      printDamage("javelin damage", [ 
+        damageRoll({
+            label: "piercing",
+            rolls: 1,
+            max: 6,
+            modifier: 5,
+            isBaseDamage: false,
+            isSuperiority: isSuperiorityChecked()}),
+      ]);
+    }
 	</script>
   </head>
   <body>
 	  <div class="container">
-		  <div>advantage <input type="checkbox" id="advantage">disadvantage <input type="checkbox" id="disadvantage"></div>
+		  <div>
+        advantage <input type="checkbox" id="advantage">
+        disadvantage <input type="checkbox" id="disadvantage">
+        superiority <input type="checkbox" id="superiority">
+      </div>
 		  <div>crit <input type="checkbox" id="crit"></div>
 		  <div>
-			<input type="button" value="attack" onclick="attack()">
-			<input type="button" value="axe damage" onclick="axeDamage()">
-			<input type="button" value="maul damage" onclick="maulDamage()">
+        <input type="button" value="melee attack" onclick="meleeAttack()">
+        <input type="button" value="axe damage" onclick="axeDamage()">
+        <input type="button" value="maul damage" onclick="maulDamage()">
+		  </div>
+      <div>
+        <input type="button" value="javelin attack" onclick="javelinAttack()">
+        <input type="button" value="axe damage" onclick="javelinDamage()">
 		  </div>
 		  <textarea id="roll-log"></textarea>
 	  </div>
