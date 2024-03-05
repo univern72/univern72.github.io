@@ -1,0 +1,233 @@
+<html>
+  <head>
+    <title>u72 dice roller</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+      .container {
+        display: flex;
+        flex-direction: column;
+      }
+      #roll-log {
+        min-height: 500px;
+        max-width: 400px;
+      }
+    </style>
+    <script>
+      // globals/constants
+      var logCounter = 1;
+      const SUPERIORITY_MAX = 10;
+      const MELEE_MODIFIER = 12;
+      const JAVELIN_MODIFIER = 10;
+    
+      // math
+      function randomInt(max) {
+        return Math.floor(Math.random() * max) + 1;
+      }
+      
+      // input parsing
+      function isCritChecked() {
+        return document.querySelector('#crit').checked;
+      }
+      
+      function isAdvantageChecked() {
+        return document.querySelector('#advantage').checked;
+      }
+      
+      function isDisadvantageChecked() {
+        return document.querySelector('#disadvantage').checked;
+      }
+      
+      function isSuperiorityChecked() {
+        return document.querySelector('#superiority').checked;
+      }
+      
+      // log management
+      function appendLog(logValue) {
+        document.getElementById("roll-log").value = logCounter + ": "
+            + logValue + "\n"
+            + document.getElementById("roll-log").value;
+        logCounter++;
+      }
+
+      function logStart(label) {
+        return (label + ": ").padEnd(14, ' ');
+      }
+      
+      function total(value) {
+        logStr = "----------------------\n";
+        logStr += logStart("total") + value + "\n";
+        return logStr;
+      }
+      
+      // rolls?
+      function d20Roll() {
+        if (isAdvantageChecked()) {
+          const attack1 = randomInt(20);
+          const attack2 = randomInt(20);
+          const attackValue = Math.max(attack1, attack2);
+          return {
+            value: attackValue,
+            log: "max(" + attack1 + ", " + attack2 + ") -> " + attackValue,
+          }
+        } else if(isDisadvantageChecked()) {
+          const attack1 = randomInt(20);
+          const attack2 = randomInt(20);
+          const attackValue = Math.min(attack1, attack2);
+          return {
+            value: attackValue,
+            log: "min(" + attack1 + ", " + attack2 + ") -> " + attackValue,
+          }
+        } else {
+          const attack = randomInt(20);
+          return {
+            value: attack,
+            log: attack,
+          }
+        }
+      }
+
+
+      function attack(label, modifier) {
+        var attackValue = 0;
+        var logStr = label + "\n" + logStart("roll");
+        
+        const attackRoll = d20Roll();
+        attackValue += attackRoll.value;
+        logStr += attackRoll.log + "\n";
+        
+        logStr += logStart("modifier") + modifier + "\n"; 
+        logStr += total(attackValue + modifier);
+      
+        appendLog(logStr);
+      }
+      
+      function damageRoll({
+          label, 
+          rolls, 
+          max, 
+          modifier = 0, 
+          isBaseDamage = false,
+          isSuperiority = false}) {
+        const critAdjRolls = rolls * (isCritChecked() ? 2 : 1);
+        var log = logStart(label) + critAdjRolls + "d" + max + " ";
+        var sum = 0;
+        for (var i = 0; i < critAdjRolls; i++) {
+          var value = randomInt(max);
+          log = log + value;
+          if (isBaseDamage && (value == 1 || value == 2)) {
+            value = randomInt(max);
+            log = log + "->" + value;
+          }
+          sum += value;
+          log += " ";
+        }
+        if (isSuperiority) {
+          const supRolls = isCritChecked() ? 2 : 1;
+          log += supRolls + "d" + SUPERIORITY_MAX + " ";
+          for (var i = 0; i < supRolls; i++) {
+            const supDamage = randomInt(SUPERIORITY_MAX);
+            sum += supDamage;
+            log += supDamage + " ";
+          }
+        }
+        if (modifier > 0) {
+          sum += modifier;
+          log += "+" + modifier + " ";
+        }
+
+        log += "=> " + sum;
+          
+        return {
+          log: log,
+          value: sum,
+        };
+      }
+      
+      function printDamage(title, rolls) {
+        var log = title + "\n";
+        var sumValue = 0;
+        rolls.forEach(roll => {
+          log += roll.log + "\n";
+          sumValue += roll.value;
+        });
+        log += total(sumValue);
+        appendLog(log);
+      }
+
+      // button functions
+      function meleeAttack() {
+        attack("melee attack", MELEE_MODIFIER);
+      }
+      
+      function javelinAttack() {
+        attack("javelin attack", JAVELIN_MODIFIER);
+      }
+      
+      function axeDamage() {
+        printDamage("axe damage", [ 
+          damageRoll({
+              label: "slashing",
+              rolls: 1,
+              max: 12,
+              modifier: 7,
+              isBaseDamage: true,
+              isSuperiority: isSuperiorityChecked()}),
+          damageRoll({
+              label: "thunder",
+              rolls: 2,
+              max: 6})
+        ]);
+      }
+
+      function maulDamage() {   
+        printDamage("maul damage", [ 
+          damageRoll({
+            label: "bludgeoning",
+            rolls: 2,
+            max: 6,
+            modifier: 7,
+            isBaseDamage: true,
+            isSuperiority: isSuperiorityChecked()}),
+          damageRoll({
+            label: "fire",
+            rolls: 2,
+            max: 6})
+        ]);
+      }
+      
+      function javelinDamage() {
+        printDamage("javelin damage", [ 
+          damageRoll({
+              label: "piercing",
+              rolls: 1,
+              max: 6,
+              modifier: 5,
+              isBaseDamage: false,
+              isSuperiority: isSuperiorityChecked()}),
+        ]);
+      }
+    </script>
+  </head>
+  <body>
+	  <div class="container">
+		  <div>
+        advantage <input type="checkbox" id="advantage">
+        disadvantage <input type="checkbox" id="disadvantage">
+      </div>
+		  <div>
+        crit <input type="checkbox" id="crit">
+        superiority <input type="checkbox" id="superiority">
+      </div>
+		  <div>
+        <input type="button" value="melee attack" onclick="meleeAttack()">
+        <input type="button" value="axe damage" onclick="axeDamage()">
+        <input type="button" value="maul damage" onclick="maulDamage()">
+		  </div>
+      <div>
+        <input type="button" value="javelin attack" onclick="javelinAttack()">
+        <input type="button" value="javelin damage" onclick="javelinDamage()">
+		  </div>
+		  <textarea id="roll-log"></textarea>
+	  </div>
+  </body>
+</html>
